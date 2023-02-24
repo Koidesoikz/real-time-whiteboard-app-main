@@ -1,5 +1,7 @@
 # Real Time Whiteboard App
 
+Jeg har lige ændret denne readme
+
 Android app that digitizes whiteboards and papers in real time developed as part of our bachelor project at AAU (BSc Software Engineering).
 
 <img src="./doc/demo.gif" width="600" />
