@@ -233,26 +233,32 @@ public class CaptureActivity extends AppCompatActivity {
             return;
         }
 
-        int rotationDegrees = imageProxy.getImageInfo().getRotationDegrees();
+        //Start bitmap conversion
         Bitmap bitmapRgb = MatConverter.imageYUV_420_888toBitmap(image);
 
+        //Start bitmap rotation
         // Rotate bitmap if necessary. The image analysis receives rotated images.
+        int rotationDegrees = imageProxy.getImageInfo().getRotationDegrees();
         if (rotationDegrees != 0) {
             bitmapRgb = rotateBitmap(bitmapRgb, rotationDegrees);
         }
 
+        //Start conversion to Open CV mat
         Mat imgRgb = new Mat();
         Utils.bitmapToMat(bitmapRgb, imgRgb);
 
+        //Start RGB to BGR conversion
+        //BGR explainer: https://stackoverflow.com/questions/367449/what-exactly-is-bgr-color-space#:~:text=The%20BGR%20is%20a%2024,are%208%2Dbit%20hex%20values.
         Mat imgBgr = new Mat();
         Imgproc.cvtColor(imgRgb, imgBgr, Imgproc.COLOR_RGB2BGR);
-        CornerDetector cornerDetector = new CornerDetector();
 
+        //Corner detection
         // Search for and display corners as long as user has not activated manual selection.
+        CornerDetector cornerDetector = new CornerDetector();
         if (!isManualSelectionEnabled && !isCapturingStarted) {
-            cornerPoints = cornerDetector.findCorners(imgBgr);
+            cornerPoints = cornerDetector.findCorners(imgBgr); //Find corners
             if (cornerPoints.height() == 4) {
-                overlayView.drawRectFromPoints(cornerPoints, imgBgr.width(), imgBgr.height());
+                overlayView.drawRectFromPoints(cornerPoints, imgBgr.width(), imgBgr.height()); //Draw a rectangle from corners
             }
 
         } else if (isManualSelectionEnabled && !isStartOfManualSelectionHandled && !isCapturingStarted) {
@@ -272,9 +278,8 @@ public class CaptureActivity extends AppCompatActivity {
         } else if (isCapturingStarted) {
             // Capturing must have been started.
 
-            PerspectiveTransformer transformer = new PerspectiveTransformer();
-
             // Perspective transform
+            PerspectiveTransformer transformer = new PerspectiveTransformer();
             Mat imgPerspective = transformer.getPerspective(imgBgr, cornerPoints);
 
             // Run image processing pipeline if perspective obtained.
@@ -283,6 +288,7 @@ public class CaptureActivity extends AppCompatActivity {
                     captureService = new CaptureService(imgPerspective.width(), imgPerspective.height(), this);
                 }
 
+                //Run image analysing pipeline
                 currentModel = captureService.capture(imgPerspective);
 
                 if (isShowingCapturedImage) {
