@@ -28,6 +28,8 @@ import androidx.core.content.ContextCompat;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.whiteboardapp.R;
+import com.whiteboardapp.common.CustomLogger;
+import com.whiteboardapp.common.DebugTags;
 import com.whiteboardapp.core.CaptureService;
 import com.whiteboardapp.core.MatPrint;
 import com.whiteboardapp.core.pipeline.CornerDetector;
@@ -194,24 +196,11 @@ public class CaptureActivity extends AppCompatActivity {
         Executor analysisExecutor = Executors.newSingleThreadExecutor();
 
         imageAnalysisUseCase.setAnalyzer(analysisExecutor, imageProxy -> {
-            long startTime = System.currentTimeMillis();
-
             analyseImage(imageProxy); // Should be a domain method!!
             imageProxy.close();
-
-            long endTime = System.currentTimeMillis();
-            System.out.println("Analysis took " + (endTime - startTime) + " milliseconds");
-
-            if (isCapturingStarted) {
-                rounds++;
-                totalTime += (endTime - startTime);
-                System.out.println("Capturing analysis AVERAGE is " + ((double) totalTime / rounds) + " milliseconds");
-            }
-
         });
 
         return imageAnalysisUseCase;
-
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float rotationDegrees) {
@@ -233,8 +222,14 @@ public class CaptureActivity extends AppCompatActivity {
             return;
         }
 
+        CustomLogger imgConversionLogger = new CustomLogger();
+        long ImgConversionStartTime = System.currentTimeMillis();
+
         //Start bitmap conversion
         Bitmap bitmapRgb = MatConverter.imageYUV_420_888toBitmap(image);
+
+        imgConversionLogger.AddTime(System.currentTimeMillis() - ImgConversionStartTime, "BitMapConverter");
+        ImgConversionStartTime = System.currentTimeMillis();
 
         //Start bitmap rotation
         // Rotate bitmap if necessary. The image analysis receives rotated images.
@@ -243,24 +238,38 @@ public class CaptureActivity extends AppCompatActivity {
             bitmapRgb = rotateBitmap(bitmapRgb, rotationDegrees);
         }
 
+        imgConversionLogger.AddTime(System.currentTimeMillis() - ImgConversionStartTime, "BitMapRotation");
+        ImgConversionStartTime = System.currentTimeMillis();
+
         //Start conversion to Open CV mat
         Mat imgRgb = new Mat();
         Utils.bitmapToMat(bitmapRgb, imgRgb);
+
+        imgConversionLogger.AddTime(System.currentTimeMillis() - ImgConversionStartTime, "OpenCVConverter");
+        ImgConversionStartTime = System.currentTimeMillis();
 
         //Start RGB to BGR conversion
         //BGR explainer: https://stackoverflow.com/questions/367449/what-exactly-is-bgr-color-space#:~:text=The%20BGR%20is%20a%2024,are%208%2Dbit%20hex%20values.
         Mat imgBgr = new Mat();
         Imgproc.cvtColor(imgRgb, imgBgr, Imgproc.COLOR_RGB2BGR);
 
+        imgConversionLogger.AddTime(System.currentTimeMillis() - ImgConversionStartTime, "RGBtoBGRConverter");
+        imgConversionLogger.Log(DebugTags.ImageConversionTag);
+
         //Corner detection
         // Search for and display corners as long as user has not activated manual selection.
         CornerDetector cornerDetector = new CornerDetector();
         if (!isManualSelectionEnabled && !isCapturingStarted) {
+            Log.i(DebugTags.CornerDetectionTag, "CornerDetection started");
+            long cornerDectictionStartTime = System.currentTimeMillis();
+
             cornerPoints = cornerDetector.findCorners(imgBgr); //Find corners
+
             if (cornerPoints.height() == 4) {
                 overlayView.drawRectFromPoints(cornerPoints, imgBgr.width(), imgBgr.height()); //Draw a rectangle from corners
             }
 
+            Log.i(DebugTags.CornerDetectionTag, "CornerDetection ended - Runtime: " + (System.currentTimeMillis() - cornerDectictionStartTime) + " ms");
         } else if (isManualSelectionEnabled && !isStartOfManualSelectionHandled && !isCapturingStarted) {
             // Draw a rectangle based on found corners or default if no corners found.
             // We have to repeat some of the find corners logic if user clicks on button and no corners have been
