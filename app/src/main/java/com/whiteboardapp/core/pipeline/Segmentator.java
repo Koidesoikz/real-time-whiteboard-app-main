@@ -47,16 +47,9 @@ public class Segmentator {
     // Performs segmentation of the given image. 
     // Returns a Mat representing the resulting segmentation map 
     public Mat segmentate(Bitmap image) {
-        long fullTimeExecutionTime = System.currentTimeMillis();
-        ;
-
         // Do segmentation
-        long imageSegmentationTime = System.currentTimeMillis();
-        ;
         TensorImage tensorImage = TensorImage.fromBitmap(image);
         List<Segmentation> results = imageSegmenter.segment(tensorImage);
-        imageSegmentationTime = System.currentTimeMillis() - imageSegmentationTime;
-        Log.i(TAG, "Time to run the segmentation model: " + imageSegmentationTime + " ms");
 
         // Resize seg map to input image size.
         Bitmap maskBitmap = createMaskBitmapAndLabels(
@@ -65,9 +58,6 @@ public class Segmentator {
         );
 
         Mat imgSegMap = createImgSegMap(maskBitmap, image.getWidth(), image.getHeight());
-
-        fullTimeExecutionTime = System.currentTimeMillis() - fullTimeExecutionTime;
-        Log.i(TAG, "Total time in segmentation step: " + fullTimeExecutionTime + " ms");
         return imgSegMap;
     }
 

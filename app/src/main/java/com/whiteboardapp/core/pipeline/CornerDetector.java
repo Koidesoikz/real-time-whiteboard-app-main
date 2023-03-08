@@ -4,6 +4,8 @@ package com.whiteboardapp.core.pipeline;
 import android.util.Log;
 
 import com.whiteboardapp.common.Calculator;
+import com.whiteboardapp.common.CustomLogger;
+import com.whiteboardapp.common.DebugTags;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -30,20 +32,34 @@ public class CornerDetector {
 
     private final int DILATION_KERNEL_SIZE = 3;
 
+    private CustomLogger logger = new CustomLogger();
+
     // Finds corners in an image.
     public MatOfPoint2f findCorners(Mat imgBgr) {
+        long startTime = System.currentTimeMillis();
+
         Mat imgEdges = makeEdgeImage(imgBgr);
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "EdgeImage");
+        startTime = System.currentTimeMillis();
+
         MatOfPoint2f cornerPoints = getCorners(imgEdges);
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "GetCorners");
+        startTime = System.currentTimeMillis();
+
         if (cornerPoints.height() == 4) {
             cornerPoints = orderPoints(cornerPoints);
         }
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "OrderPoints");
+        logger.Log(DebugTags.CornerDetectionTag);
 
         return cornerPoints;
     }
 
     // Finds edges in an image.
     private Mat makeEdgeImage(Mat imgBgr) {
-
         // Convert to gray scale.
         Mat imgGray = new Mat();
         Imgproc.cvtColor(imgBgr, imgGray, Imgproc.COLOR_BGR2GRAY);
@@ -78,8 +94,8 @@ public class CornerDetector {
         // Find largest shape
         MatOfPoint2f shapePoints = findLargestShapePoints(contours);
         MatOfPoint2f cornerPoints = approxCornerPoints(shapePoints, imgEdges);
-        return cornerPoints;
 
+        return cornerPoints;
     }
 
     private MatOfPoint2f findLargestShapePoints(ArrayList<MatOfPoint> contours) {
@@ -101,7 +117,6 @@ public class CornerDetector {
 
         }
 
-        Log.d(TAG, "findLargestShapePoints: Largest shape point count: " + shapePoints.size().height + "(h) " + shapePoints.size().width + "(w)");
         return shapePoints;
     }
 

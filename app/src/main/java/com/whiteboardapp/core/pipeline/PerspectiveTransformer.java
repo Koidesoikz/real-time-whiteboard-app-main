@@ -2,6 +2,8 @@ package com.whiteboardapp.core.pipeline;
 
 
 import com.whiteboardapp.common.Calculator;
+import com.whiteboardapp.common.CustomLogger;
+import com.whiteboardapp.common.DebugTags;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -20,12 +22,14 @@ public class PerspectiveTransformer {
     private static final int MIN_DIMENSION = 100;
     private static final int MAX_DIMENSION = 5000;
 
+    private CustomLogger logger = new CustomLogger();
+
     private boolean hasExtremeDimensions(double maxWidth, double maxHeight) {
         return maxWidth < MIN_DIMENSION || maxHeight < MIN_DIMENSION || maxWidth > MAX_DIMENSION || maxHeight > MAX_DIMENSION;
     }
 
     public Mat getPerspective(Mat imgRgb, MatOfPoint2f cornerPoints) {
-
+        long startTime = System.currentTimeMillis();
         // Approx target corners.
         double[] tl = cornerPoints.get(0, 0);
         double[] tr = cornerPoints.get(1, 0);
@@ -52,10 +56,16 @@ public class PerspectiveTransformer {
                 new Point(maxWidth - 1, maxHeight - 1), // br
                 new Point(0, maxHeight - 1)); // bl
 
+        logger.AddTime(System.currentTimeMillis() - startTime, "Preprocess");
+        startTime = System.currentTimeMillis();
+
         //	Get matrix for image perspective perspective
         //	Note: Target corners represents the "real"/actual dimensions of the input points i.e. actual
         //	ratio of paper.
         Mat perspectiveMatrix = Imgproc.getPerspectiveTransform(cornerPoints, targetCorners);
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "PerspectiveTransform");
+        startTime = System.currentTimeMillis();
 
         //	Perform perspective transformation.
         //	Note: The given width and height are for cropping only i.e. does not affect how image is transformed.
@@ -63,7 +73,13 @@ public class PerspectiveTransformer {
 
         Imgproc.warpPerspective(imgRgb, imgPerspective, perspectiveMatrix, new Size(maxWidth, maxHeight));
 
+        logger.AddTime(System.currentTimeMillis() - startTime, "WarpPerspective");
+        startTime = System.currentTimeMillis();
+
         Mat croppedMat = cropAndResize(imgPerspective, CROP_MARGIN);
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "CropAndResize");
+        logger.Log(DebugTags.PerspectiveTransformationTag);
 
         return croppedMat;
     }
