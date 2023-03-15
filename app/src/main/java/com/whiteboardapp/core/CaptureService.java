@@ -5,11 +5,14 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import com.whiteboardapp.common.CustomLogger;
+import com.whiteboardapp.common.DebugTags;
 import com.whiteboardapp.controller.MatConverter;
 import com.whiteboardapp.core.pipeline.Binarization;
 import com.whiteboardapp.core.pipeline.ChangeDetector;
 import com.whiteboardapp.core.pipeline.Segmentator;
 
+import org.checkerframework.checker.units.qual.C;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
@@ -18,6 +21,8 @@ import org.opencv.imgproc.Imgproc;
 import com.whiteboardapp.common.AppUtils;
 
 import static android.content.ContentValues.TAG;
+
+import java.net.ServerSocket;
 
 public class CaptureService {
     private final Context appContext;
@@ -33,39 +38,53 @@ public class CaptureService {
 
     // Runs image through the image processing pipeline
     public Mat capture(Mat imgBgr) {
+        CustomLogger logger = new CustomLogger();
+
+        long startTime = System.currentTimeMillis();
 
         // Segmentation
-        Log.d(TAG, "capture: Segmentation started.");
         Mat matPerspectiveRgb = new Mat();
         Imgproc.cvtColor(imgBgr, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
         Segmentator segmentator = new Segmentator(appContext);
         Bitmap bitmapRgb = MatConverter.matToBitmap(matPerspectiveRgb);
         Mat imgSegMap = segmentator.segmentate(bitmapRgb);
-        Log.d(TAG, "capture: Segmentation done.");
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "Segmentation");
+        startTime = System.currentTimeMillis();
 
         // Binarize a gray scale version of the image.
         Mat imgWarpGray = new Mat();
         Imgproc.cvtColor(imgBgr, imgWarpGray, Imgproc.COLOR_BGR2GRAY);
         Mat imgBinarized = Binarization.binarize(imgWarpGray);
 
+        logger.AddTime(System.currentTimeMillis() - startTime,"Binarize");
+        startTime = System.currentTimeMillis();
+
         // Remove segments before change detection.
         Mat currentModelCopy = removeSegmentArea(imgBinarized, currentModel, imgSegMap, imgBgr);
+
+        logger.AddTime(System.currentTimeMillis() - startTime, "Remove segments");
+        startTime = System.currentTimeMillis();
 
         // Change detection
         Mat imgPersistentChanges = changeDetector.detectChanges(imgBinarized, currentModelCopy);
 
+        logger.AddTime(System.currentTimeMillis() - startTime, "Change detection");
+        startTime = System.currentTimeMillis();
+
         // Update current model with persistent changes.
         updateModel(imgBinarized, imgPersistentChanges);
-        return currentModel;
 
+        logger.AddTime(System.currentTimeMillis() - startTime, "Update current model");
+        logger.Log(DebugTags.ImageProcessingPipelineTag);
+
+        return currentModel;
     }
 
     // Removes segment area from image
     private Mat removeSegmentArea(Mat binarizedImg, Mat currentModel, Mat imgSegMap, Mat imgPerspective) {
         Mat currentModelCopy = new Mat();
         currentModel.copyTo(currentModelCopy);
-
-        long startTime = System.currentTimeMillis();
 
 //        for (int i = 0; i < binarizedImg.rows(); i++) {
 //            for (int j = 0; j < binarizedImg.cols(); j++) {
@@ -91,15 +110,10 @@ public class CaptureService {
         binarizedImg.put(0, 0, bufferBinarized);
         currentModelCopy.put(0, 0, bufferModel);
 
-        long endTime = System.currentTimeMillis();
-        System.out.println("Remove segment loop took: " + (endTime - startTime) + " milliseconds");
         return currentModelCopy;
     }
 
     private void updateModel(Mat imgBinarized, Mat imgPersistentChanges) {
-
-        long startTime = System.currentTimeMillis();
-
         byte[] bufferModel = AppUtils.getBuffer(currentModel);
         byte[] bufferChanges = AppUtils.getBuffer(imgPersistentChanges);
         byte[] bufferBinarized = AppUtils.getBuffer(imgBinarized);
@@ -119,9 +133,6 @@ public class CaptureService {
 //        }
 
         currentModel.put(0, 0, bufferModel);
-
-        long endTime = System.currentTimeMillis();
-        System.out.println("Update model loop took: " + (endTime - startTime) + " milliseconds");
     }
 
 }

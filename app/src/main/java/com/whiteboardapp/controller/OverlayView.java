@@ -23,6 +23,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 // Overlay to manage and draw corner points and rectangle.
@@ -34,7 +35,7 @@ public class OverlayView implements SurfaceHolder.Callback {
     private Paint cornerPaint;
     private Paint rectPaint;
     private Bitmap cornersBitmap; // Saved corners.
-    private final int CORNER_RADIUS = 30;
+    private final int CORNER_RADIUS = 35;
     private final SurfaceView drawingOverlay;
     private final SurfaceHolder overlayHolder;
     private CornerViewModel cornerViewModelToMove = null;
@@ -124,22 +125,29 @@ public class OverlayView implements SurfaceHolder.Callback {
     }
 
     // Draws a rectangle in the center of the overlay.
-    public void drawDefaultRect() {
-        cornerCircles.clear();
-        int widthStep = drawingOverlay.getWidth() / 4;
-        int heightStep = drawingOverlay.getHeight() / 4;
-        cornerCircles.add(new CornerViewModel(widthStep, heightStep, CORNER_RADIUS));
-        cornerCircles.add(new CornerViewModel(drawingOverlay.getWidth() - widthStep, heightStep, CORNER_RADIUS));
-        cornerCircles.add(new CornerViewModel(drawingOverlay.getWidth() - widthStep, drawingOverlay.getHeight() - heightStep, CORNER_RADIUS));
-        cornerCircles.add(new CornerViewModel(widthStep, drawingOverlay.getHeight() - heightStep, CORNER_RADIUS));
-        drawRectOnCanvas();
+    public void drawDefaultRect(int srcWidth, int srcHeight) {
+        Point[] points = {
+            new Point(50, 200),
+            new Point(srcWidth - 50, 200),
+            new Point(srcWidth - 50, srcHeight - 50),
+            new Point(50, srcHeight - 50)
+        };
 
+        setNewCorners(srcWidth,srcHeight, points);
+        drawRectOnCanvas();
     }
 
     // Draw rectangle adjusted for difference between overlay and source dimensions.
-    public void drawRectFromPoints(MatOfPoint2f cornerPoints, int srcWidth, int srcHeight) {
+    public void drawRectFromPoints(MatOfPoint2f cornerPoints, int srcWidth, int srcHeight, boolean test) {
         Point[] points = cornerPoints.toArray();
-        setNewCorners(srcWidth, srcHeight, points);
+
+        if(test) {
+            points[0] = new Point(50, 200);
+            points[1] = new Point(srcWidth - 50, 200);
+            points[2] = new Point(srcWidth - 50, srcHeight - 50);
+            points[3] = new Point(50, srcHeight - 50);
+        }
+        setNewCorners(srcWidth,srcHeight, points);
         drawRectOnCanvas();
     }
 

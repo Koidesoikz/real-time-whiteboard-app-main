@@ -56,8 +56,8 @@ public class CaptureActivity extends AppCompatActivity {
 
     // View bools
     private boolean isManualSelectionEnabled = false;
+    private boolean isManualSelectionCompleted = false;
     private boolean isCapturingStarted = false;
-    private boolean isStartOfManualSelectionHandled = false;
 
     // From domain
     private MatOfPoint2f cornerPoints;
@@ -111,7 +111,8 @@ public class CaptureActivity extends AppCompatActivity {
         });
 
         cornerButton.setOnClickListener(view -> {
-            isManualSelectionEnabled = true;
+            isManualSelectionEnabled = !isManualSelectionEnabled;
+            isManualSelectionCompleted = false;
             capturingButton.setEnabled(true);
         });
 
@@ -129,7 +130,6 @@ public class CaptureActivity extends AppCompatActivity {
                 cornerButton.setEnabled(true);
                 isManualSelectionEnabled = false;
                 isCapturingStarted = false;
-                isStartOfManualSelectionHandled = false;
                 captureService = null; // Reset capture service.
             }
         });
@@ -260,29 +260,21 @@ public class CaptureActivity extends AppCompatActivity {
         // Search for and display corners as long as user has not activated manual selection.
         CornerDetector cornerDetector = new CornerDetector();
         if (!isManualSelectionEnabled && !isCapturingStarted) {
-            Log.i(DebugTags.CornerDetectionTag, "CornerDetection started");
-            long cornerDectictionStartTime = System.currentTimeMillis();
 
             cornerPoints = cornerDetector.findCorners(imgBgr); //Find corners
 
             if (cornerPoints.height() == 4) {
-                overlayView.drawRectFromPoints(cornerPoints, imgBgr.width(), imgBgr.height()); //Draw a rectangle from corners
+                overlayView.drawRectFromPoints(cornerPoints, imgBgr.width(), imgBgr.height(), false); //Draw a rectangle from corners
             }
 
-            Log.i(DebugTags.CornerDetectionTag, "CornerDetection ended - Runtime: " + (System.currentTimeMillis() - cornerDectictionStartTime) + " ms");
-        } else if (isManualSelectionEnabled && !isStartOfManualSelectionHandled && !isCapturingStarted) {
+        } else if (isManualSelectionEnabled && !isCapturingStarted && !isManualSelectionCompleted) {
             // Draw a rectangle based on found corners or default if no corners found.
             // We have to repeat some of the find corners logic if user clicks on button and no corners have been
             // detected automatically yet.
+            overlayView.drawDefaultRect(imgBgr.width(), imgBgr.height());
 
-            cornerPoints = cornerDetector.findCorners(imgBgr);
-            if (cornerPoints.height() == 4) {
-                overlayView.drawRectFromPoints(cornerPoints, imgBgr.width(), imgBgr.height());
-            } else {
-                overlayView.drawDefaultRect();
-            }
             overlayView.isListenForManualCornerSelection = true;
-            isStartOfManualSelectionHandled = true;
+            isManualSelectionCompleted = true;
 
         } else if (isCapturingStarted) {
             // Capturing must have been started.
