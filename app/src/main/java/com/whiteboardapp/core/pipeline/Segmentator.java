@@ -8,6 +8,8 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import com.whiteboardapp.common.AppUtils;
+import com.whiteboardapp.common.CustomLogger;
+import com.whiteboardapp.common.DebugTags;
 
 import org.checkerframework.checker.formatter.FormatUtil;
 import org.opencv.android.Utils;
@@ -27,6 +29,7 @@ import java.util.List;
 
 // Segmentation using DeepLab model.
 public class Segmentator {
+    public CustomLogger logger = new CustomLogger();
     public final String TAG = "SegmentationTask";
     private final int NUM_THREADS = 4;
     private final String SEGMENTATION_MODEL_NAME = "deeplabv3_257_mv_gpu.tflite";
@@ -47,17 +50,31 @@ public class Segmentator {
     // Performs segmentation of the given image. 
     // Returns a Mat representing the resulting segmentation map 
     public Mat segmentate(Bitmap image) {
+        logger = new CustomLogger();
+
+
+
+        long startTime = System.currentTimeMillis();
         // Do segmentation
         TensorImage tensorImage = TensorImage.fromBitmap(image);
-        List<Segmentation> results = imageSegmenter.segment(tensorImage);
+        logger.AddTime(System.currentTimeMillis() - startTime, "TensorImage");
 
+        startTime = System.currentTimeMillis();
+        List<Segmentation> results = imageSegmenter.segment(tensorImage);
+        logger.AddTime(System.currentTimeMillis() - startTime, "ImageSegmenter");
+
+        startTime = System.currentTimeMillis();
         // Resize seg map to input image size.
         Bitmap maskBitmap = createMaskBitmapAndLabels(
                 results.get(0), image.getWidth(),
                 image.getHeight()
         );
+        logger.AddTime(System.currentTimeMillis() - startTime, "ResizeSegMap");
 
+        startTime = System.currentTimeMillis();
         Mat imgSegMap = createImgSegMap(maskBitmap, image.getWidth(), image.getHeight());
+        logger.AddTime(System.currentTimeMillis() - startTime, "CreateImgSegMap");
+        logger.Log(DebugTags.SegmentorTag);
         return imgSegMap;
     }
 

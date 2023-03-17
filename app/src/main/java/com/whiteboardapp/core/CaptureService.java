@@ -16,6 +16,7 @@ import org.checkerframework.checker.units.qual.C;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import com.whiteboardapp.common.AppUtils;
@@ -31,7 +32,7 @@ public class CaptureService {
 
     public CaptureService(int defaultWidth, int defaultHeight, Context appContext) {
         this.appContext = appContext;
-        currentModel = new Mat(defaultHeight, defaultWidth, CvType.CV_8UC1);
+        currentModel = new Mat(defaultHeight / 2, defaultWidth / 2, CvType.CV_8UC1);
         currentModel.setTo(new Scalar(255));
         changeDetector = new ChangeDetector();
     }
@@ -42,9 +43,12 @@ public class CaptureService {
 
         long startTime = System.currentTimeMillis();
 
+        Mat dSized = new Mat();
+        Imgproc.resize(imgBgr, dSized, new Size(), 0.5,0.5, Imgproc.INTER_NEAREST);
+
         // Segmentation
         Mat matPerspectiveRgb = new Mat();
-        Imgproc.cvtColor(imgBgr, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
+        Imgproc.cvtColor(dSized, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
         Segmentator segmentator = new Segmentator(appContext);
         Bitmap bitmapRgb = MatConverter.matToBitmap(matPerspectiveRgb);
         Mat imgSegMap = segmentator.segmentate(bitmapRgb);
@@ -54,14 +58,14 @@ public class CaptureService {
 
         // Binarize a gray scale version of the image.
         Mat imgWarpGray = new Mat();
-        Imgproc.cvtColor(imgBgr, imgWarpGray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(dSized, imgWarpGray, Imgproc.COLOR_BGR2GRAY);
         Mat imgBinarized = Binarization.binarize(imgWarpGray);
 
         logger.AddTime(System.currentTimeMillis() - startTime,"Binarize");
         startTime = System.currentTimeMillis();
 
         // Remove segments before change detection.
-        Mat currentModelCopy = removeSegmentArea(imgBinarized, currentModel, imgSegMap, imgBgr);
+        Mat currentModelCopy = removeSegmentArea(imgBinarized, currentModel, imgSegMap, dSized);
 
         logger.AddTime(System.currentTimeMillis() - startTime, "Remove segments");
         startTime = System.currentTimeMillis();
