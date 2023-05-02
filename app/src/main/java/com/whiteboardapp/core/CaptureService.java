@@ -44,15 +44,18 @@ public class CaptureService {
         long startTime = System.currentTimeMillis();
 
         Mat dSized = new Mat();
-        Imgproc.resize(imgBgr, dSized, new Size(), 0.5,0.5, Imgproc.INTER_NEAREST);
+        Imgproc.resize(imgBgr, dSized, new Size(480, 480), Imgproc.INTER_NEAREST);
 
         // Segmentation
         Mat matPerspectiveRgb = new Mat();
         Imgproc.cvtColor(dSized, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
         Segmentator segmentator = new Segmentator(appContext);
         Bitmap bitmapRgb = MatConverter.matToBitmap(matPerspectiveRgb);
+        System.out.println("Pre Segmentate");
         Mat imgSegMap = segmentator.segmentate(bitmapRgb);
 
+        return imgSegMap;
+        /*
         logger.AddTime(System.currentTimeMillis() - startTime, "Segmentation");
         startTime = System.currentTimeMillis();
 
@@ -83,6 +86,8 @@ public class CaptureService {
         logger.Log(DebugTags.ImageProcessingPipelineTag);
 
         return currentModel;
+
+         */
     }
 
     // Removes segment area from image

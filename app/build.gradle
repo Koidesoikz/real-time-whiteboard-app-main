@@ -68,7 +68,9 @@ dependencies {
     implementation "androidx.camera:camera-view:1.0.0-alpha24"
 
 // Tensorflow Task library (high level API)
-    implementation 'org.tensorflow:tensorflow-lite-task-vision:0.1.0'
+    implementation 'org.tensorflow:tensorflow-lite-task-vision:+'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:+'
+    implementation 'org.tensorflow:tensorflow-lite-support:+'
 
     // Other
     implementation 'androidx.appcompat:appcompat:1.2.0'

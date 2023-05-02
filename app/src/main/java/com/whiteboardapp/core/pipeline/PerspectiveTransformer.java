@@ -45,9 +45,10 @@ public class PerspectiveTransformer {
         double maxHeight = Math.max(heightRight, heightLeft);
 
         // Ensure no extreme dimensions.
+        /*
         if (hasExtremeDimensions(maxWidth, maxHeight)) {
             return null;
-        }
+        }*/
 
         // Create rectangle from approximated corners.
         MatOfPoint2f targetCorners = new MatOfPoint2f(

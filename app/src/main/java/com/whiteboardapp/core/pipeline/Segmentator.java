@@ -18,12 +18,20 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.tensorflow.lite.Tensor;
+import org.tensorflow.lite.InterpreterFactory;
+import org.tensorflow.lite.InterpreterApi;
+import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.support.common.FileUtil;
 import org.tensorflow.lite.support.image.TensorImage;
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
+import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.task.vision.segmenter.ColoredLabel;
 import org.tensorflow.lite.task.vision.segmenter.Segmentation;
 import org.tensorflow.lite.task.vision.segmenter.ImageSegmenter;
 
 import java.security.InvalidKeyException;
+import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,18 +40,29 @@ public class Segmentator {
     public CustomLogger logger = new CustomLogger();
     public final String TAG = "SegmentationTask";
     private final int NUM_THREADS = 4;
-    private final String SEGMENTATION_MODEL_NAME = "deeplabv3_257_mv_gpu.tflite";
+    private final String SEGMENTATION_MODEL_NAME = "best_model.tflite";
     private final int ALPHA_VALUE = 128;
 
     private ImageSegmenter imageSegmenter;
     private TensorImage maskTensor;
     private int[] pixelsGlobal;
+    private InterpreterApi tflite;
+    private TensorBuffer buffer;
 
     public Segmentator(Context context) {
+        buffer = TensorBuffer.createFixedSize(new int[]{1, 3, 480, 480}, DataType.FLOAT32);
+
         try {
-            imageSegmenter = ImageSegmenter.createFromFile(context, SEGMENTATION_MODEL_NAME);
+            // DET HER ER MIG DER LIGE PRØVER NOGET!!!!!!
+            /*ImageProcessor imageProcessor = new ImageProcessor.Builder().build();
+            TensorImage tensorImage = new TensorImage(DataType.UINT8)*/
+            MappedByteBuffer model = FileUtil.loadMappedFile(context, SEGMENTATION_MODEL_NAME);
+
+            tflite = InterpreterApi.create(model, new InterpreterApi.Options());
+            System.out.println("YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            // imageSegmenter = ImageSegmenter.createFromFile(context, SEGMENTATION_MODEL_NAME);
         } catch (Exception exception) {
-            throw new RuntimeException("Exception occurred while loading model from file", exception);
+            throw new RuntimeException("Exception occurred while loading model from file" + exception);
         }
     }
 
@@ -51,31 +70,75 @@ public class Segmentator {
     // Returns a Mat representing the resulting segmentation map 
     public Mat segmentate(Bitmap image) {
         logger = new CustomLogger();
+        float[] res;
+        int[] shape;
+        Tensor resTensor;
 
 
 
         long startTime = System.currentTimeMillis();
-        // Do segmentation
+        // Do
+
+
+
         TensorImage tensorImage = TensorImage.fromBitmap(image);
+        TensorImage tensorImageFloat = TensorImage.createFrom(tensorImage, DataType.FLOAT32);
         logger.AddTime(System.currentTimeMillis() - startTime, "TensorImage");
 
+
+
         startTime = System.currentTimeMillis();
-        List<Segmentation> results = imageSegmenter.segment(tensorImage);
+        /*
+        System.out.println("TensorImage:");
+        System.out.println(tensorImage.getBuffer().toString());
+        System.out.println("TensorImageFloat:");
+        System.out.println(tensorImageFloat.getBuffer().toString());
+        System.out.println("Buffer:");
+        System.out.println(buffer.getBuffer().toString());
+        */
+
+
+        if (tflite != null) {
+            tflite.run(tensorImageFloat.getBuffer(), buffer.getBuffer());
+
+            resTensor = tflite.getOutputTensor(0);
+            res = buffer.getFloatArray();
+            shape = buffer.getShape();
+            System.out.println(shape);
+            System.out.println(res[0]);
+        }
+        /*
+        [0][0][0][0]
+        [0][1][0][0]    [0][0][0][1]
+        */
+
+        //Tensor testTensor =
+
+        //res.ToMask();
+
+        //List<Segmentation> results = imageSegmenter.segment(tensorImage);
         logger.AddTime(System.currentTimeMillis() - startTime, "ImageSegmenter");
 
         startTime = System.currentTimeMillis();
         // Resize seg map to input image size.
+        /*
         Bitmap maskBitmap = createMaskBitmapAndLabels(
                 results.get(0), image.getWidth(),
                 image.getHeight()
-        );
+        ); */
         logger.AddTime(System.currentTimeMillis() - startTime, "ResizeSegMap");
+
+        Bitmap maskBitmap = image;
+
+        Mat returnMat = new Mat();
+        Utils.bitmapToMat(maskBitmap, returnMat);
+
 
         startTime = System.currentTimeMillis();
         Mat imgSegMap = createImgSegMap(maskBitmap, image.getWidth(), image.getHeight());
         logger.AddTime(System.currentTimeMillis() - startTime, "CreateImgSegMap");
         logger.Log(DebugTags.SegmentorTag);
-        return imgSegMap;
+        return returnMat;
     }
 
     // Method converted from Tensorflow Kotlin tutorial:

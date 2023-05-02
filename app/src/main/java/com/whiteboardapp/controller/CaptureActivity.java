@@ -39,9 +39,13 @@ import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -216,7 +220,7 @@ public class CaptureActivity extends AppCompatActivity {
             return;
         }
 
-        @SuppressLint("UnsafeExperimentalUsageError") Image image = imageProxy.getImage();
+        @SuppressLint({"UnsafeExperimentalUsageError", "UnsafeOptInUsageError"}) Image image = imageProxy.getImage();
         if (image == null) {
             Log.i(TAG, "analyseImage: getImage() returned null");
             return;
@@ -279,6 +283,19 @@ public class CaptureActivity extends AppCompatActivity {
         } else if (isCapturingStarted) {
             // Capturing must have been started.
 
+            //Bandaid fix
+
+            List<Point> imgCorners = Arrays.asList(
+                    new Point(0, 0),
+                    new Point(imgBgr.width(), 0),
+                    new Point(0, imgBgr.height()),
+                    new Point(imgBgr.width(), imgBgr.height())
+            );
+
+            cornerPoints = new MatOfPoint2f();
+
+            cornerPoints.fromList(imgCorners);
+
             // Perspective transform
             PerspectiveTransformer transformer = new PerspectiveTransformer();
             Mat imgPerspective = transformer.getPerspective(imgBgr, cornerPoints);
@@ -290,6 +307,7 @@ public class CaptureActivity extends AppCompatActivity {
                 }
 
                 //Run image analysing pipeline
+                System.out.println("Pre Capture");
                 currentModel = captureService.capture(imgPerspective);
 
                 if (isShowingCapturedImage) {
