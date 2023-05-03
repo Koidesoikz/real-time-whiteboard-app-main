@@ -71,7 +71,7 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-task-vision:+'
     implementation 'org.tensorflow:tensorflow-lite-gpu:+'
     implementation 'org.tensorflow:tensorflow-lite-support:+'
-    implementation 'org.tensorflow:tensorflow-core-platform:+'
+    implementation 'org.tensorflow:tensorflow-core-platform:0.4.1'
 
     // Other
     implementation 'androidx.appcompat:appcompat:1.2.0'

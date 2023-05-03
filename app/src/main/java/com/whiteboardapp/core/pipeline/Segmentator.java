@@ -84,8 +84,8 @@ public class Segmentator {
         float[] res;
         int[] shape;
         ArrayList<Tensor> resTensors = new ArrayList<Tensor>();
-        Graph g = new Graph();
-        Scope scope = g.baseScope();
+        //Graph g = new Graph();
+        //Scope scope = g.baseScope();
         Ops ops = Ops.create();
 
 
@@ -123,7 +123,8 @@ public class Segmentator {
             Constant<TUint8> c2 = ops.constant(tempTensor.asReadOnlyBuffer().array());
             //Tensor tensor = ops.linalg.transpose(tempTensor, ops.constant(perm));
 
-            Output<TUint8> y = Transpose.create(scope, c2 ,c1).y();
+            Output<TInt32> y = ops.linalg.transpose(c1, c2).y();
+            //Output<TUint8> y = Transpose.create(scope, c2 ,c1).y();
 
             resTensors.add(tempTensor);
             res = buffer.getFloatArray();
