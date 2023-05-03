@@ -10,6 +10,7 @@ import android.util.Log;
 import com.whiteboardapp.common.AppUtils;
 import com.whiteboardapp.common.CustomLogger;
 import com.whiteboardapp.common.DebugTags;
+import com.whiteboardapp.common.ModelArgs;
 
 import org.checkerframework.checker.formatter.FormatUtil;
 import org.opencv.android.Utils;
@@ -18,6 +19,13 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.tensorflow.Graph;
+import org.tensorflow.Operand;
+import org.tensorflow.Output;
+import org.tensorflow.op.Ops;
+import org.tensorflow.op.Scope;
+import org.tensorflow.op.core.Constant;
+import org.tensorflow.op.linalg.Transpose;
 import org.tensorflow.lite.Tensor;
 import org.tensorflow.lite.InterpreterFactory;
 import org.tensorflow.lite.InterpreterApi;
@@ -29,6 +37,9 @@ import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.task.vision.segmenter.ColoredLabel;
 import org.tensorflow.lite.task.vision.segmenter.Segmentation;
 import org.tensorflow.lite.task.vision.segmenter.ImageSegmenter;
+import org.tensorflow.types.TFloat32;
+import org.tensorflow.types.TInt32;
+import org.tensorflow.types.TUint8;
 
 import java.security.InvalidKeyException;
 import java.nio.MappedByteBuffer;
@@ -72,8 +83,10 @@ public class Segmentator {
         logger = new CustomLogger();
         float[] res;
         int[] shape;
-        Tensor resTensor;
-
+        ArrayList<Tensor> resTensors = new ArrayList<Tensor>();
+        Graph g = new Graph();
+        Scope scope = g.baseScope();
+        Ops ops = Ops.create();
 
 
         long startTime = System.currentTimeMillis();
@@ -101,12 +114,25 @@ public class Segmentator {
         if (tflite != null) {
             tflite.run(tensorImageFloat.getBuffer(), buffer.getBuffer());
 
-            resTensor = tflite.getOutputTensor(0);
+            resTensors.add(tflite.getOutputTensor(0));
+            Tensor tempTensor = tflite.getOutputTensor(1);
+            int[] perm = new int[]{0, 3, 1, 2};
+
+            // JEG BEGÅR SELVMORD :))))))))))))))))
+            Constant<TInt32> c1 = ops.constant(perm);
+            Constant<TUint8> c2 = ops.constant(tempTensor.asReadOnlyBuffer().array());
+            //Tensor tensor = ops.linalg.transpose(tempTensor, ops.constant(perm));
+
+            Output<TUint8> y = Transpose.create(scope, c2 ,c1).y();
+
+            resTensors.add(tempTensor);
             res = buffer.getFloatArray();
             shape = buffer.getShape();
             System.out.println(shape);
             System.out.println(res[0]);
         }
+
+        ModelArgs testArg = new ModelArgs();
         /*
         [0][0][0][0]
         [0][1][0][0]    [0][0][0][1]
