@@ -13,6 +13,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Switch;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,6 +58,8 @@ public class CaptureActivity extends AppCompatActivity {
     private boolean isCapturingStarted = false;
     private boolean isStartOfManualSelectionHandled = false;
 
+    private boolean isDownsamplingEnabled = false;
+
     // From domain
     private MatOfPoint2f cornerPoints;
     private CaptureService captureService;
@@ -92,6 +95,7 @@ public class CaptureActivity extends AppCompatActivity {
         Button cornerButton = findViewById(R.id.setCornersBtn);
         Button capturingButton = findViewById(R.id.startCapturingBtn);
         Button changeImageBtn = findViewById(R.id.changeImageBtn);
+        Switch downsamplingSwitch = findViewById(R.id.downsamplingEnable);
 
         changeImageBtn.setOnClickListener(view -> {
 
@@ -130,6 +134,13 @@ public class CaptureActivity extends AppCompatActivity {
                 isStartOfManualSelectionHandled = false;
                 captureService = null; // Reset capture service.
             }
+        });
+
+        downsamplingSwitch.setOnClickListener(view ->{
+
+            isDownsamplingEnabled = downsamplingSwitch.isChecked();
+
+            System.out.println("Downsampling: " + isDownsamplingEnabled);
         });
     }
 
@@ -283,7 +294,7 @@ public class CaptureActivity extends AppCompatActivity {
                     captureService = new CaptureService(imgPerspective.width(), imgPerspective.height(), this);
                 }
 
-                currentModel = captureService.capture(imgPerspective);
+                currentModel = captureService.capture(imgPerspective, isDownsamplingEnabled);
 
                 if (isShowingCapturedImage) {
                     Bitmap currentModelBitmap = MatConverter.matToBitmap(currentModel);
