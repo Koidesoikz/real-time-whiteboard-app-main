@@ -2,15 +2,19 @@
 
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/container"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
         android:layout_height="match_parent"
         android:layout_width="match_parent">
 
     <!-- Camera preview -->
+
     <androidx.camera.view.PreviewView
-            android:id="@+id/cameraPreview"
-            android:layout_height="match_parent"
-            android:layout_width="match_parent" />
+        android:id="@+id/cameraPreview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    </androidx.camera.view.PreviewView>
 
     <ImageView
             android:id="@+id/capturedImage"
@@ -18,16 +22,9 @@
             android:layout_height="match_parent" />
 
     <SurfaceView
-            android:id="@+id/drawingOverlay"
-            android:layout_height="match_parent"
-            android:layout_width="match_parent" />
-
-    <Button
-            android:id="@+id/setCornersBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Set corners"
-            android:layout_centerInParent="true" />
+        android:id="@+id/drawingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <Button
             android:id="@+id/changeImageBtn"
@@ -46,6 +43,27 @@
             android:layout_gravity="right"
             android:enabled="false"
             android:text="Start capturing" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/setCornersBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Set corners" />
+
+        <Switch
+            android:id="@+id/downsamplingEnable"
+            android:layout_width="wrap_content"
+            android:layout_height="58dp"
+            android:text="Downsampling"
+            android:visibility="visible"
+            tools:visibility="visible" />
+    </LinearLayout>
 
 
 </FrameLayout>

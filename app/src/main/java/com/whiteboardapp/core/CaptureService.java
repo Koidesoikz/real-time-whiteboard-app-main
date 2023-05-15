@@ -13,6 +13,7 @@ import com.whiteboardapp.core.pipeline.Segmentator;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import com.whiteboardapp.common.AppUtils;
@@ -32,15 +33,32 @@ public class CaptureService {
     }
 
     // Runs image through the image processing pipeline
-    public Mat capture(Mat imgBgr) {
+    public Mat capture(Mat imgBgr, boolean downsampling) {
 
         // Segmentation
         Log.d(TAG, "capture: Segmentation started.");
-        Mat matPerspectiveRgb = new Mat();
-        Imgproc.cvtColor(imgBgr, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
-        Segmentator segmentator = new Segmentator(appContext);
-        Bitmap bitmapRgb = MatConverter.matToBitmap(matPerspectiveRgb);
-        Mat imgSegMap = segmentator.segmentate(bitmapRgb);
+
+
+        Mat dSized = new Mat();
+        Mat imgSegMap = new Mat();
+
+        if(downsampling){
+            Imgproc.resize(imgBgr, dSized, new Size(), 0.5,0.5, Imgproc.INTER_NEAREST);
+            Mat matPerspectiveRgb = new Mat();
+            Imgproc.cvtColor(dSized, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
+            Segmentator segmentator = new Segmentator(appContext);
+            Bitmap bitmapRgb = MatConverter.matToBitmap(matPerspectiveRgb);
+            imgSegMap = segmentator.segmentate(bitmapRgb);
+        } else{
+            Mat matPerspectiveRgb = new Mat();
+            Imgproc.cvtColor(imgBgr, matPerspectiveRgb, Imgproc.COLOR_BGR2RGB);
+            Segmentator segmentator = new Segmentator(appContext);
+            Bitmap bitmapRgb = MatConverter.matToBitmap(matPerspectiveRgb);
+            imgSegMap = segmentator.segmentate(bitmapRgb);
+        }
+
+
+
         Log.d(TAG, "capture: Segmentation done.");
 
         // Binarize a gray scale version of the image.
