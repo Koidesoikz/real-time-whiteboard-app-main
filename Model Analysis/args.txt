@@ -1,0 +1,6 @@
+conf:null
+iou:0.7
+agnostic_nms:false
+max_det:300
+nc:1
+classes:none
