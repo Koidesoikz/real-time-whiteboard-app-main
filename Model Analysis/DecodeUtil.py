@@ -1,3 +1,5 @@
+# The functions in this script are heavily inspired from various functions in the Ultralytics library. They have here been rewritten to function with tensorflow.
+
 import time
 import torch
 import torchvision
